@@ -62,7 +62,7 @@ void rdp_draw_textured_rectangle_scaled( int tx, int ty, int bx, int by, double 
 void rdp_draw_sprite( int x, int y, int flags );
 void rdp_draw_sprite_scaled( int x, int y, float x_scale, float y_scale, int flags );
 void rdp_set_primitive_color( uint32_t color );
-void rdp_set_blend_color(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _alpha );
+void rdp_set_blend_color( uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _alpha );
 void rdp_draw_filled_rectangle( int tx, int ty, int bx, int by );
 void rdp_draw_filled_triangle( float x1, float y1, float x2, float y2, float x3, float y3 );
 void rdp_set_texture_flush( flush_t flush );
@@ -87,9 +87,9 @@ void rdp_triangle_setup( int type );
 
 // FRAMEBUFFER new
 uint32_t get_pixel( display_context_t disp, int x, int y );
-void rdp_buffer_copy(display_context_t disp, uint16_t *buffer_texture, uint16_t x_buf, uint16_t y_buf, uint16_t width, uint16_t height);
-void rdp_buffer_screen(display_context_t disp, uint16_t *buffer_texture, int texture_mode);
-void rdp_load_texbuf(uint16_t *buffer_texture, int sh, int th);
+void rdp_buffer_copy( display_context_t disp, uint16_t *buffer_texture, uint16_t x_buf, uint16_t y_buf, uint16_t width, uint16_t height, uint16_t skip );
+void rdp_buffer_screen( display_context_t disp, uint16_t *buffer_texture, int texture_mode );
+void rdp_load_texbuf( uint16_t *buffer_texture, int sh, int th );
 
 #ifdef __cplusplus
 }
