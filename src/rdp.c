@@ -1310,15 +1310,15 @@ void rdp_buffer_copy( display_context_t disp, uint16_t *buffer_texture, uint16_t
         tex_pos += width;
     }	
 	
-	// load into TMEM?
-	if (skip==0)
-	{	
-		// flush
-		data_cache_hit_writeback( buffer_texture, (width * height) << 1 );
+    // load into TMEM?
+    if (skip==0)
+    {	
+        // flush
+        data_cache_hit_writeback( buffer_texture, (width * height) << 1 );
 	
-		// send texture to TMEM
-		rdp_load_texbuf( buffer_texture, width-1, height-1 );	
-	}	
+        // send texture to TMEM
+        rdp_load_texbuf( buffer_texture, width-1, height-1 );	
+    }	
 }	
 
 // NEW: Resize a full framebuffer screen into 1 or 2 textures of max(64x64)
@@ -1365,11 +1365,11 @@ void rdp_buffer_screen( display_context_t disp, uint16_t *buffer_texture, int te
             height = height >> 1 ; // 64x24? split 1
         }	
         else
-            {
-                y_step1 = y_step;
-                y_step = __height;
-                height = height >> 1; // 64x24? split 2
-            }			
+        {
+            y_step1 = y_step;
+            y_step = __height;
+            height = height >> 1; // 64x24? split 2
+        }			
 
     // generate texture
     for(int j = y_step1; j < y_step; j+=step) // Y
