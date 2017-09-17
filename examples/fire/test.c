@@ -19,7 +19,6 @@ static display_context_t disp = 0; // screen
 char tStr[32]; // text
 
 // INTERNAL FUNCTIONS
-uint8_t restore_type=0; // disabled
 int error=-1;
 
 // FPS
@@ -36,7 +35,6 @@ uint16_t buffer_texture[768]={0}; // 24*32
 int buffer_width=24;
 int buffer_height=32;
 int buffer_x=0;
-int buffer_size=0;
 int angle=0;
 int radius=4;
 int waves=25000;
@@ -101,9 +99,9 @@ int main(void)
             if (graph[i]->bitdepth > 1)
                 data_cache_hit_writeback_invalidate( graph[i]->data, graph[i]->width * graph[i]->height * graph[i]->bitdepth );
             else if (graph[i]->bitdepth == 1)
-                data_cache_hit_writeback_invalidate( graph[i]->data, (graph[i]->width * graph[i]->height) );
+                data_cache_hit_writeback_invalidate( graph[i]->data, graph[i]->width * graph[i]->height );
                 else
-                    data_cache_hit_writeback_invalidate( graph[i]->data, ((graph[i]->width * graph[i]->height) >> 1) );
+                    data_cache_hit_writeback_invalidate( graph[i]->data, (graph[i]->width * graph[i]->height) >> 1 );
         }
     }
 
@@ -116,18 +114,10 @@ int main(void)
         // WAIT BUFFER
         while( !(disp = display_lock()) );
 
-        // SET CLIPPING
+        // SET CLIPPING (we don't clear buffer, the background covers the full screen)
         rdp_attach_display(disp);
         rdp_sync(SYNC_PIPE);
-        rdp_set_clipping(0,0,320,240);
-		
-        // WE DON'T CLEAR BUFFER ON THIS EXAMPLE (the background covers the full screen)
-        if (restore_type==1)
-        {	
-            rdp_enable_primitive_fill();
-            rdp_set_primitive_color(graphics_make_color(48,0,72,255));
-            rdp_draw_filled_rectangle(0,0,320,240);
-        } 
+        rdp_set_clipping(0,0,320,240); 
 		
         // SCAN CONTROLS		
         update_controls();
@@ -176,8 +166,7 @@ int main(void)
                 if (i<buffer_x)
                     buffer_x=i;
 				
-                buffer_size=(buffer_width-buffer_x)*2; // texture is 16bits *2 (int16)
-                memmove(&buffer_texture[i*buffer_width],&buffer_texture[(i*buffer_width)+buffer_x],buffer_size); // move memory blocks
+                memmove(&buffer_texture[i*buffer_width],&buffer_texture[(i*buffer_width)+buffer_x],(buffer_width-buffer_x)*2); // move memory blocks *2 (int16)
             }
             else // right mov
             {	
@@ -190,8 +179,7 @@ int main(void)
                 if (i<buffer_x)
                     buffer_x=i;
 				
-                buffer_size=(buffer_width-buffer_x)*2;
-                memmove(&buffer_texture[(i*buffer_width)+buffer_x],&buffer_texture[i*buffer_width],buffer_size);
+                memmove(&buffer_texture[(i*buffer_width)+buffer_x],&buffer_texture[i*buffer_width],(buffer_width-buffer_x)*2);
             }
 			
             angle+=waves;
@@ -199,11 +187,9 @@ int main(void)
 	
         delay+=speed;
 	
-        if (angle>360000) 
-            angle-=360000+(angle-360000); 
-		
-        if (delay>360000) 
-            delay-=360000+(delay-360000);		
+        // 360000 IS A FULL ROTATION
+        angle = angle % 360000;
+        delay = delay % 360000;	
 		
         // DRAW FRAMEBUFFER AREA ONCE PROCESSED
         data_cache_hit_writeback(buffer_texture, (buffer_width * buffer_height) << 1 ); // CPU cache to RDRAM
@@ -236,7 +222,7 @@ int main(void)
             fire_obj[sel_fire].y=mouse_y;
             fire_obj[sel_fire].alpha=129;
 			
-            if (z_button>0) // Z fire is not permanent
+            if (z_button>0) // Z does blur effect
                 fire_obj[sel_fire].alpha=128;				
         }
 		
