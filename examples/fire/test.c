@@ -96,12 +96,10 @@ int main(void)
         else
         {		
             // INVALIDATE CACHE
-            if (graph[i]->bitdepth > 1)
+            if (graph[i]->bitdepth > 0)
                 data_cache_hit_writeback_invalidate( graph[i]->data, graph[i]->width * graph[i]->height * graph[i]->bitdepth );
-            else if (graph[i]->bitdepth == 1)
-                data_cache_hit_writeback_invalidate( graph[i]->data, graph[i]->width * graph[i]->height );
-                else
-                    data_cache_hit_writeback_invalidate( graph[i]->data, (graph[i]->width * graph[i]->height) >> 1 );
+            else
+                data_cache_hit_writeback_invalidate( graph[i]->data, (graph[i]->width * graph[i]->height) >> 1 );
         }
     }
 
