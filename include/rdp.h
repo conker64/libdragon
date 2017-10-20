@@ -84,6 +84,8 @@ void rdp_color( void );
 void rdp_rgba_scale( uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _alpha );
 void rdp_load_tlut( uint8_t _pal_bp, uint8_t _pal_num, uint16_t *_palette );
 void rdp_triangle_setup( int type );
+void rdp_rgb_dither( uint8_t type );
+void rdp_alpha_dither( uint8_t type );
 
 // FRAMEBUFFER new
 uint32_t get_pixel( display_context_t disp, int x, int y );

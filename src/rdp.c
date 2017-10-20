@@ -135,6 +135,10 @@ static uint8_t enable_tlut = 0;
 
 static uint8_t atomic_prim = 1;
 
+static uint8_t rgb_dither = 3; // disabled by default
+
+static uint8_t alpha_dither = 3; // disabled
+
 int tri_set=0x0A000000; // textured by default
 
 /**
@@ -518,12 +522,28 @@ void rdp_enable_1primitive( int type )
         atomic_prim=1;
 }
 
+// NEW: RGB dither options
+// 0 - square matrix, 1 - standard, 2 - random, 3 - disabled
+void rdp_rgb_dither( uint8_t type )
+{
+    if (type<4) 	
+        rgb_dither=type;
+}	
+
+// NEW: ALPHA dither options
+// 0 - pattern, 1 - ~pattern, 2 - random, 3 - disabled
+void rdp_alpha_dither( uint8_t type )
+{
+    if (type<4) 	
+        alpha_dither=type;
+}
+
 // NEW: 1cycle (Point sampled default)
 // Compatible with: X_Scale, RGB_Scale, Alpha blending
 void rdp_texture_1cycle( void )
 {
     // Set Other Modes	
-    __rdp_ringbuffer_queue( 0x2F0008F0 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 );
+    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
     __rdp_ringbuffer_queue( 0x00404040 );
     __rdp_ringbuffer_send();	
 	
@@ -540,7 +560,7 @@ void rdp_texture_1cycle( void )
 void rdp_additive_blending( void )
 {
     // Set Other Modes
-    __rdp_ringbuffer_queue( 0x2F0008F0 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 );
+    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
     __rdp_ringbuffer_queue( 0x00404040 );
     __rdp_ringbuffer_send();	
 	
@@ -558,7 +578,7 @@ void rdp_additive_blending( void )
 void rdp_intensify( void )
 {
     // Set Other Modes
-    __rdp_ringbuffer_queue( 0x2F0008F0 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 );
+    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
     __rdp_ringbuffer_queue( 0x00404040 );
     __rdp_ringbuffer_send();	
 	
@@ -575,7 +595,7 @@ void rdp_intensify( void )
 void rdp_color( void )
 {
     // Set Other Modes
-    __rdp_ringbuffer_queue( 0x2F0008F0 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 );
+    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
     __rdp_ringbuffer_queue( 0x00404040 );
     __rdp_ringbuffer_send();	
 	
