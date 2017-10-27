@@ -16,19 +16,18 @@ cd "${BUILD_SRC_DIR}/${target}/binutils"
 binutils_configure_options=(
         --prefix="${BUILD_INSTALL_DIR}/${target}" \
         --target="${target}" \
-        --enable-static \
-        --enable-64-bit-bfd \
-        --disable-werror \
         --disable-debug \
-        --disable-shared \
-        --disable-threads \
         --disable-multilib \
         --disable-nls \
+        --disable-shared \
+        --disable-threads \
+        --disable-werror \
+        --enable-64-bit-bfd \
+        --enable-static \
         --with-gcc \
         --with-gnu-as \
         --with-gnu-ld \
-        --with-stabs \
-        --disable-werror)
+        --with-stabs)
 if ! [ -z "${BUILD_HOST}" ]; then
     binutils_configure_options+=(--host="${BUILD_HOST}")
 fi
