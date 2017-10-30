@@ -1,5 +1,9 @@
 ## Build files
+*.elf
+*.o
 *.a
+*.bin
+*.dfs
 build/
 build_gcc/
 tools/chksum64
@@ -8,6 +12,9 @@ tools/mkdfs/mkdfs
 tools/mksprite/convtool
 tools/mksprite/mksprite
 tools/n64tool
+
+## Cygwin/MinGW junk
+*.exe
 
 ## OSX junk
 .DS_Store
