@@ -139,6 +139,8 @@ static uint8_t rgb_dither = 3; // disabled by default
 
 static uint8_t alpha_dither = 3; // disabled
 
+static uint8_t cycle_mode = 0; // 0 = 1cycle, 1 = 2cycle
+
 int tri_set=0x0A000000; // textured by default
 
 /**
@@ -538,12 +540,24 @@ void rdp_alpha_dither( uint8_t type )
         alpha_dither=type;
 }
 
-// NEW: 1cycle (Point sampled default)
+// NEW: Set cycle (Point sampled default)
 // Compatible with: X_Scale, RGB_Scale, Alpha blending
-void rdp_texture_1cycle( void )
+void rdp_texture_cycle( uint8_t type )
 {
+    // Set Cycle Mode
+    if (type>0)
+    {
+        cycle_mode=1;
+        pixel_mode=512;
+    }
+    else
+    {
+        cycle_mode=0;
+        pixel_mode=1024;
+    }
+
     // Set Other Modes	
-    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
+    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | cycle_mode << 20 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
     __rdp_ringbuffer_queue( 0x00404040 );
     __rdp_ringbuffer_send();	
 	
@@ -551,61 +565,48 @@ void rdp_texture_1cycle( void )
     __rdp_ringbuffer_queue( 0x3C000061 );
     __rdp_ringbuffer_queue( 0x082C01C0 | enable_alpha ); // 0x04200100 faster?
     __rdp_ringbuffer_send();	
-	
-    // 1 pixel cycle
-    pixel_mode=1024;	
 }	
 
 // NEW: Additive Blending
 void rdp_additive_blending( void )
-{
-    // Set Other Modes
-    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
-    __rdp_ringbuffer_queue( 0x00404040 );
-    __rdp_ringbuffer_send();	
-	
+{	
     // Set Combine Mode
     __rdp_ringbuffer_queue( 0x3C000061 );
     __rdp_ringbuffer_queue( 0x082C017F );
-    __rdp_ringbuffer_send();		
-		
-    // 1 pixel cycle
-    pixel_mode=1024;	
+    __rdp_ringbuffer_send();			
 }
 
 // NEW: Intensify
 // RGB from 0 (normal) to 255 (white)
 void rdp_intensify( void )
-{
-    // Set Other Modes
-    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
-    __rdp_ringbuffer_queue( 0x00404040 );
-    __rdp_ringbuffer_send();	
-	
+{	
     // Set Combine Mode
     __rdp_ringbuffer_queue( 0x3C0000C1 );
     __rdp_ringbuffer_queue( 0x032C00C0 | enable_alpha );
     __rdp_ringbuffer_send();		
-		
-    // 1 pixel cycle
-    pixel_mode=1024;
 }
 
 // NEW: Unique Color (sprite silouette)
 void rdp_color( void )
-{
-    // Set Other Modes
-    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
-    __rdp_ringbuffer_queue( 0x00404040 );
-    __rdp_ringbuffer_send();	
-	
+{	
     // Set Combine Mode
     __rdp_ringbuffer_queue( 0x3C000063 );
     __rdp_ringbuffer_queue( 0x082C01C0 | enable_alpha );
     __rdp_ringbuffer_send();		
-		
-    // 1 pixel cycle
-    pixel_mode=1024;	
+}
+
+// NEW: TV noise effects (0 partial, 1 complete)
+void rdp_noise( int type )
+{	
+    if (type!=0)
+        type=3;
+    else
+        type=1;
+	
+    // Set Combine Mode
+    __rdp_ringbuffer_queue( 0x3C0000E0 | type );
+    __rdp_ringbuffer_queue( 0x082C01C0 | enable_alpha );
+    __rdp_ringbuffer_send();	
 }
 
 // NEW: RGBA_Scale

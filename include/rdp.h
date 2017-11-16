@@ -77,7 +77,7 @@ void rdp_enable_filter( int type );
 void rdp_enable_alpha( int type );
 void rdp_enable_tlut( int type );
 void rdp_enable_1primitive( int type );
-void rdp_texture_1cycle( void );
+void rdp_texture_cycle( uint8_t type );
 void rdp_additive_blending( void );
 void rdp_intensify( void );
 void rdp_color( void );
@@ -86,6 +86,7 @@ void rdp_load_tlut( uint8_t _pal_bp, uint8_t _pal_num, uint16_t *_palette );
 void rdp_triangle_setup( int type );
 void rdp_rgb_dither( uint8_t type );
 void rdp_alpha_dither( uint8_t type );
+void rdp_noise( int type );
 
 // FRAMEBUFFER new
 uint32_t get_pixel( display_context_t disp, int x, int y );

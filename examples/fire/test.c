@@ -200,7 +200,7 @@ int main(void)
 
         // DRAW FIRE
         rdp_enable_alpha(1); // we wan't alpha blending
-        rdp_texture_1cycle(); // alpha blending needs 1cycle mode
+        rdp_texture_cycle(0); // alpha blending needs 1cycle mode
         rdp_rgba_scale(255,255,255,164); // alpha set to 164, no RGB changes
         rdp_load_texture(graph[41+fire_anim]);
         rdp_cp_sprite(mouse_x,mouse_y,0,0,0,0); // fire follows the mouse, have embedded center align
@@ -266,7 +266,7 @@ int main(void)
         // DRAW CIRCLE LIGHT
         rdp_rgba_scale(255,255,255,randx(16,48)); // alpha is random between 16 and 48
         rdp_enable_filter(1); // light is smoother with filter		
-        rdp_texture_1cycle(); // we apply the change		
+        rdp_texture_cycle(0); // we apply the change		
         rdp_load_texture(graph[47]);
         sphere_size=(randx(70,100)/100.0)+1.0; // the size of the lighting is variable too
         rdp_cp_sprite_scaled(mouse_x,mouse_y-16,sphere_size,sphere_size,0,16,16,0); // CP sprite with input center x16 y16 (which is the center of the 32x32 sphere)	
