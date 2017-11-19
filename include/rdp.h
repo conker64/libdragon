@@ -73,10 +73,10 @@ void rdp_send( void );
 void rdp_command( uint32_t data );
 void rdp_cp_sprite( int x, int y, int flags, int cp_x, int cp_y, int line );
 void rdp_cp_sprite_scaled( int x, int y, float x_scale, float y_scale, int flags, int cp_x, int cp_y, int line );
-void rdp_enable_filter( int type );
-void rdp_enable_alpha( int type );
-void rdp_enable_tlut( int type );
-void rdp_enable_1primitive( int type );
+void rdp_enable_filter( uint8_t type );
+void rdp_enable_alpha( uint8_t type );
+void rdp_enable_tlut( uint8_t type );
+void rdp_enable_1primitive( uint8_t type );
 void rdp_texture_cycle( uint8_t type );
 void rdp_additive_blending( void );
 void rdp_intensify( void );
@@ -86,7 +86,7 @@ void rdp_load_tlut( uint8_t _pal_bp, uint8_t _pal_num, uint16_t *_palette );
 void rdp_triangle_setup( int type );
 void rdp_rgb_dither( uint8_t type );
 void rdp_alpha_dither( uint8_t type );
-void rdp_noise( int type );
+void rdp_noise( uint8_t type );
 
 // FRAMEBUFFER new
 uint32_t get_pixel( display_context_t disp, int x, int y );

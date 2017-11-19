@@ -139,8 +139,6 @@ static uint8_t rgb_dither = 3; // disabled by default
 
 static uint8_t alpha_dither = 3; // disabled
 
-static uint8_t cycle_mode = 0; // 0 = 1cycle, 1 = 2cycle
-
 int tri_set=0x0A000000; // textured by default
 
 /**
@@ -489,7 +487,7 @@ void rdp_enable_texture_copy( void )
 }
 
 // NEW: Enable or disable texture filter (use with 1cycle)
-void rdp_enable_filter( int type )
+void rdp_enable_filter( uint8_t type )
 {
     if (type==0)
         enable_filter=0;
@@ -498,7 +496,7 @@ void rdp_enable_filter( int type )
 }
 
 // NEW: Enable or disable alpha blending (use with 1cycle)
-void rdp_enable_alpha( int type )
+void rdp_enable_alpha( uint8_t type )
 {
     if (type==0)
         enable_alpha=0;
@@ -507,7 +505,7 @@ void rdp_enable_alpha( int type )
 }
 
 // NEW: Enable or disable tlut (to take effect call texture copy or cycle1)
-void rdp_enable_tlut( int type )
+void rdp_enable_tlut( uint8_t type )
 {
     if (type==0)
         enable_tlut=0;	
@@ -516,7 +514,7 @@ void rdp_enable_tlut( int type )
 }
 
 // NEW: Enable or disable atomic prim (delay between primitives)
-void rdp_enable_1primitive( int type )
+void rdp_enable_1primitive( uint8_t type )
 {
     if (type==0)
         atomic_prim=0;	
@@ -547,17 +545,17 @@ void rdp_texture_cycle( uint8_t type )
     // Set Cycle Mode
     if (type>0)
     {
-        cycle_mode=1;
+        type=1;
         pixel_mode=512;
     }
     else
     {
-        cycle_mode=0;
+        type=0;
         pixel_mode=1024;
     }
 
     // Set Other Modes	
-    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | cycle_mode << 20 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
+    __rdp_ringbuffer_queue( 0x2F000800 | atomic_prim << 23 | type << 20 | enable_tlut << 15 | enable_filter << 13 | rgb_dither << 6 | alpha_dither << 4 );
     __rdp_ringbuffer_queue( 0x00404040 );
     __rdp_ringbuffer_send();	
 	
@@ -595,16 +593,15 @@ void rdp_color( void )
     __rdp_ringbuffer_send();		
 }
 
-// NEW: TV noise effects (0 partial, 1 complete)
-void rdp_noise( int type )
+// NEW: TV noise effects (0 disable, 1 partial, 2 complete)
+void rdp_noise( uint8_t type )
 {	
-    if (type!=0)
-        type=3;
-    else
-        type=1;
-	
     // Set Combine Mode
-    __rdp_ringbuffer_queue( 0x3C0000E0 | type );
+    if (type>0)
+        __rdp_ringbuffer_queue( (type == 1) ? 0x3C0000E1 : 0x3C0000E3 );
+    else
+        __rdp_ringbuffer_queue( 0x3C000061 );
+	
     __rdp_ringbuffer_queue( 0x082C01C0 | enable_alpha );
     __rdp_ringbuffer_send();	
 }
