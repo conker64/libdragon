@@ -13,6 +13,25 @@
 #include "system.c"
 #include "controls.c"
 
+// enable palette (tlut)
+#define EN_TLUT 0x00800000000000
+// enable atomic prim, 1st primitive bandwitdh save
+#define ATOMIC_PRIM 0x80000000000000
+// enable perspective correction
+#define PERSP_TEX_EN 0x08000000000000
+// select alpha dither
+#define ALPHA_DITHER_SEL_PATTERN 0x00000000000000
+#define ALPHA_DITHER_SEL_PATTERNB 0x00001000000000
+#define ALPHA_DITHER_SEL_NOISE 0x00002000000000
+#define ALPHA_DITHER_SEL_NO_DITHER 0x00003000000000
+// select rgb dither
+#define RGB_DITHER_SEL_MAGIC_SQUARE_MATRIX 0x00000000000000
+#define RGB_DITHER_SEL_STANDARD_BAYER_MATRIX 0x00004000000000
+#define RGB_DITHER_SEL_NOISE 0x00008000000000
+#define RGB_DITHER_SEL_NO_DITHER 0x0000C000000000
+// enable texture filtering
+#define SAMPLE_TYPE 0x00200000000000
+
 // SYSTEM
 static sprite_t *graph[50]; // sprites (0..40 background, 41..45 fire, 46 stick, 47 light)
 static display_context_t disp = 0; // screen
@@ -81,7 +100,10 @@ int main(void)
     int i=0;
     int i1=0;
     char sprite_path[32];
-
+	
+    // BASIC RDP CONFIG
+    uint64_t RDP_CONFIG = ATOMIC_PRIM | ALPHA_DITHER_SEL_NO_DITHER | RGB_DITHER_SEL_NO_DITHER; // VERY IMPORTANT, this example needs atomic prim or crashes in real hardware
+	
     // LOAD SPRITES
     for(i=1;i<48;i++)
     {
@@ -107,7 +129,7 @@ int main(void)
     rdp_set_texture_flush(FLUSH_STRATEGY_NONE);
 	
     // LOOP
-    while(1) 
+    while(1)
     {	
         // WAIT BUFFER
         while( !(disp = display_lock()) );
@@ -121,7 +143,7 @@ int main(void)
         update_controls();
 
         // RDP COPY MODE
-        rdp_enable_texture_copy();	
+        rdp_texture_copy(RDP_CONFIG);
 		
         // DRAW BACKGROUND
         num=1;
@@ -199,9 +221,8 @@ int main(void)
         rdp_cp_sprite(mouse_x,mouse_y,0,0,0,0); // Stick have custom center align embedded on 46.sprite, we use this function instead rdp_draw_sprite
 
         // DRAW FIRE
-        rdp_enable_alpha(1); // we wan't alpha blending
-        rdp_texture_cycle(0); // alpha blending needs 1cycle mode
-        rdp_rgba_scale(255,255,255,164); // alpha set to 164, no RGB changes
+        rdp_texture_cycle(0,1,RDP_CONFIG); // enables alpha on 1cycle mode, keeps atomic_prim
+        rdp_set_prim_color(255,255,255,164); // alpha set to 164, no RGB changes
         rdp_load_texture(graph[41+fire_anim]);
         rdp_cp_sprite(mouse_x,mouse_y,0,0,0,0); // fire follows the mouse, have embedded center align
 
@@ -216,8 +237,8 @@ int main(void)
             if (sel_fire>99) // Fire variables will be recycled
                 sel_fire=1;
 			
-            fire_obj[sel_fire].x=mouse_x;
-            fire_obj[sel_fire].y=mouse_y;
+            fire_obj[sel_fire].x=mouse_x+randx(-2,2);
+            fire_obj[sel_fire].y=mouse_y+randx(-2,2);
             fire_obj[sel_fire].alpha=129;
 			
             if (z_button>0) // Z does blur effect
@@ -241,10 +262,10 @@ int main(void)
                     if (fire_obj[i].alpha<129) // fire will vanish (Z button)
                     {
                         fire_obj[i].alpha-=8;
-                        rdp_rgba_scale(255,255,255,fire_obj[i].alpha);
+                        rdp_set_prim_color(255,255,255,fire_obj[i].alpha);
                     }
                     else
-                        rdp_rgba_scale(255,255,255,128); // fire stays on screen (A button)
+                        rdp_set_prim_color(255,255,255,128); // fire stays on screen (A button)
 
                     // DRAW
                     rdp_cp_sprite(fire_obj[i].x,fire_obj[i].y,0,0,0,0);
@@ -264,15 +285,11 @@ int main(void)
             fire_tick--;		
 
         // DRAW CIRCLE LIGHT
-        rdp_rgba_scale(255,255,255,randx(16,48)); // alpha is random between 16 and 48
-        rdp_enable_filter(1); // light is smoother with filter		
-        rdp_texture_cycle(0); // we apply the change		
+        rdp_set_prim_color(255,255,255,randx(16,48)); // alpha is random between 16 and 48		
+        rdp_texture_cycle(0,1,RDP_CONFIG | SAMPLE_TYPE); // light is smoother with filter (1cycle,alpha,config+filter enabled)
         rdp_load_texture(graph[47]);
         sphere_size=(randx(70,100)/100.0)+1.0; // the size of the lighting is variable too
         rdp_cp_sprite_scaled(mouse_x,mouse_y-16,sphere_size,sphere_size,0,16,16,0); // CP sprite with input center x16 y16 (which is the center of the 32x32 sphere)	
-
-        rdp_enable_filter(0); // filter disabled, is applied only on lighting
-        rdp_enable_alpha(0); // alpha should be disabled when not necessary
 		
         // RDP IS DONE
         rdp_detach_display();

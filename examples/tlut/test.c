@@ -13,6 +13,25 @@
 #include "system.c"
 #include "controls.c"
 
+// enable palette (tlut)
+#define EN_TLUT 0x00800000000000
+// enable atomic prim, 1st primitive bandwitdh save
+#define ATOMIC_PRIM 0x80000000000000
+// enable perspective correction
+#define PERSP_TEX_EN 0x08000000000000
+// select alpha dither
+#define ALPHA_DITHER_SEL_PATTERN 0x00000000000000
+#define ALPHA_DITHER_SEL_PATTERNB 0x00001000000000
+#define ALPHA_DITHER_SEL_NOISE 0x00002000000000
+#define ALPHA_DITHER_SEL_NO_DITHER 0x00003000000000
+// select rgb dither
+#define RGB_DITHER_SEL_MAGIC_SQUARE_MATRIX 0x00000000000000
+#define RGB_DITHER_SEL_STANDARD_BAYER_MATRIX 0x00004000000000
+#define RGB_DITHER_SEL_NOISE 0x00008000000000
+#define RGB_DITHER_SEL_NO_DITHER 0x0000C000000000
+// enable texture filtering
+#define SAMPLE_TYPE 0x00200000000000
+
 // SYSTEM
 static sprite_t *graph[19]; // sprites
 static display_context_t disp = 0; // screen
@@ -73,6 +92,9 @@ int main(void)
     // INIT RAND
     srand(timer_ticks() & 0x7FFFFFFF);	
 	
+    // BASIC RDP CONFIG
+    uint64_t RDP_CONFIG = ATOMIC_PRIM | ALPHA_DITHER_SEL_NO_DITHER | RGB_DITHER_SEL_NO_DITHER;	
+	
     int i=0;
     char sprite_path[32];
 		
@@ -116,15 +138,15 @@ int main(void)
         if (restore_type==1)
         {	
             rdp_enable_primitive_fill();
-            rdp_set_primitive_color	(graphics_make_color(48,0,72,255));
-            rdp_draw_filled_rectangle(0,0,320,240);
+            rdp_set_fill_color(48,0,72,255);
+            rdp_draw_filled_rectangle(0,0,319,239);
         }
 
         // SCAN CONTROLS		
         update_controls();	 
 		
         // RDP TEXTURE MODE
-        rdp_enable_texture_copy();
+        rdp_texture_copy(RDP_CONFIG);
 
         // DRAW COLOR TABLE		
         for(i=0;i<16;i++)
@@ -292,19 +314,15 @@ int main(void)
         data_cache_hit_writeback_invalidate( palette_0, 16*2 ); // 16 colors, int16 = 2 bytes
 		
         // DRAW ALUCARD SPRITE
-        rdp_enable_tlut(1); // enable tlut
-        rdp_texture_cycle(0); // 1cycle because is going to be 2x size		
-        rdp_load_tlut(0,1,palette_0); // 4bit, upload 1 palette, point to the palette struct
-		
+        rdp_texture_cycle(0,0,RDP_CONFIG | EN_TLUT); // 1cycle because is going to be 2x size, enable tlut for palettes		
+        rdp_load_tlutx(15,(uint32_t)palette_0); // 0-15 colors upload, point to the palette struct
         rdp_load_texture(graph[18]);
         rdp_draw_sprite_scaled(45,70,2.0,2.0,0); // scaled 2X
 		
         // THEN DRAW MOUSE
-        rdp_enable_tlut(0); // set to disable tlut flag
-        rdp_enable_texture_copy();	// we disable tlut & we don't need 1cycle here
+        rdp_texture_copy(RDP_CONFIG); // we disable tlut & we don't need 1cycle here
         rdp_load_texture(graph[17]);
         rdp_draw_sprite(mouse_x, mouse_y, 0 );	
-		
 		
         // RDP IS DONE
         rdp_detach_display();
