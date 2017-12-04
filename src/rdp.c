@@ -277,7 +277,6 @@ void rdp_send( void )
     __rdp_ringbuffer_send();
 }
 
-
 /**
  * @brief Initialize the RDP system
  */
@@ -578,23 +577,26 @@ void rdp_set_prim_color( uint8_t r, uint8_t g, uint8_t b, uint8_t a )
 // Select palette for 4bit textures
 void rdp_select_palette( uint8_t pal )
 {
-    use_palette = pal % 15;	
+    use_palette = pal & 15;	
 }
 
-// Load palette into TMEM
-void rdp_load_tlutx( uint8_t col_num, uint16_t *palette )
-{
+// Load invidivual palette into TMEM
+void rdp_load_palette( uint8_t pal, uint8_t col_num, uint16_t *palette )
+{	
     // Set Texture Image (Palette)
-    rdp_command( 0x3D100000 ); // format RGBA / size 16bit
-    rdp_command( (uint32_t)palette );		
-		
+    __rdp_ringbuffer_queue( 0x3D100000 ); // format RGBA / size 16bit
+    __rdp_ringbuffer_queue( (uint32_t)palette );		
+    __rdp_ringbuffer_send();
+	
     // Set Tile (TLUT)
-    rdp_command( 0x35000100 );
-    rdp_command( 0x07000000 ); // tile 7 to avoid SYNC TILE		
-		
+    __rdp_ringbuffer_queue( 0x35000100 | ((pal & 15) << 4) ); // TMEM position
+    __rdp_ringbuffer_queue( 0x07000000 ); // tile 7 to avoid SYNC TILE		
+    __rdp_ringbuffer_send();
+	
     // Load TLUT
-    rdp_command( 0x30000000 );
-    rdp_command( 0x07000000 | (col_num << 2) << 12 ); // tile 7
+    __rdp_ringbuffer_queue( 0x30000000 );
+    __rdp_ringbuffer_queue( 0x07000000 | (col_num << 2) << 12 ); // tile 7
+    __rdp_ringbuffer_send();
 }
 
 // Load texture of 16/32bits
