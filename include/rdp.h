@@ -75,7 +75,7 @@ void rdp_set_prim_color( uint8_t r, uint8_t g, uint8_t b, uint8_t a );
 void rdp_set_blend_color( uint8_t r, uint8_t g, uint8_t b, uint8_t a );
 void rdp_texture_copy( uint64_t mode );
 void rdp_texture_cycle( uint8_t cycle, uint8_t enable_alpha, uint64_t mode );
-void rdp_load_tlutx( uint8_t col_num, uint32_t palette );
+void rdp_load_tlutx( uint8_t col_num, uint16_t *palette );
 void rdp_select_palette( uint8_t pal );
 void rdp_additive( void );
 void rdp_intensify( uint8_t enable_alpha );

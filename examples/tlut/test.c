@@ -315,7 +315,7 @@ int main(void)
 		
         // DRAW ALUCARD SPRITE
         rdp_texture_cycle(0,0,RDP_CONFIG | EN_TLUT); // 1cycle because is going to be 2x size, enable tlut for palettes		
-        rdp_load_tlutx(15,(uint32_t)palette_0); // 0-15 colors upload, point to the palette struct
+        rdp_load_tlutx(15,palette_0); // 0-15 colors upload, point to the palette struct
         rdp_load_texture(graph[18]);
         rdp_draw_sprite_scaled(45,70,2.0,2.0,0); // scaled 2X
 		

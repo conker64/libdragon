@@ -582,11 +582,11 @@ void rdp_select_palette( uint8_t pal )
 }
 
 // Load palette into TMEM
-void rdp_load_tlutx( uint8_t col_num, uint32_t palette )
+void rdp_load_tlutx( uint8_t col_num, uint16_t *palette )
 {
     // Set Texture Image (Palette)
     rdp_command( 0x3D100000 ); // format RGBA / size 16bit
-    rdp_command( palette );		
+    rdp_command( (uint32_t)palette );		
 		
     // Set Tile (TLUT)
     rdp_command( 0x35000100 );
