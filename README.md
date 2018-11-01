@@ -1,5 +1,5 @@
 # libdragon
-Libdragon with expanded RDP features:
+Libdragon with extended RDP features:
 - Sprite flip (Vertically, horizontally or both)
 - Sprite zooming (Scale X, Scale Y or both)
 - Sprite center align
