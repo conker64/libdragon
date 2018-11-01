@@ -13,7 +13,6 @@
  * @addtogroup rdp
  * @{
  */
- 
 
 /**
  * @brief RDP sync operations
@@ -29,17 +28,6 @@ typedef enum
     /** @brief Block until all tile operations are complete */
     SYNC_TILE
 } sync_t;
-
-/**
- * @brief Caching strategy for loaded textures
- */
-typedef enum
-{
-    /** @brief Textures are assumed to be pre-flushed */
-    FLUSH_STRATEGY_NONE,
-    /** @brief Cache will be flushed on all incoming textures */
-    FLUSH_STRATEGY_AUTOMATIC
-} flush_t;
 
 /** @} */
 
@@ -62,7 +50,6 @@ void rdp_draw_sprite( int x, int y, int flags );
 void rdp_draw_sprite_scaled( int x, int y, float x_scale, float y_scale, int flags );
 void rdp_draw_filled_rectangle( int tx, int ty, int bx, int by );
 void rdp_draw_filled_triangle( float x1, float y1, float x2, float y2, float x3, float y3 );
-void rdp_set_texture_flush( flush_t flush );
 void rdp_close( void );
 
 // RDP new
@@ -88,6 +75,9 @@ uint32_t get_pixel( display_context_t disp, int x, int y );
 void rdp_buffer_copy( display_context_t disp, uint16_t *buffer_texture, uint16_t x_buf, uint16_t y_buf, uint16_t width, uint16_t height, uint16_t skip );
 void rdp_buffer_screen( display_context_t disp, uint16_t *buffer_texture, int texture_mode );
 void rdp_load_texbuf( uint16_t *buffer_texture, int sh, int th );
+
+// LOAD new
+sprite_t *load_sprite( const char * const spritename );
 
 #ifdef __cplusplus
 }

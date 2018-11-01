@@ -105,9 +105,6 @@ static uint32_t rdp_start = 0;
 /** @brief End of the command in the ringbuffer */
 static uint32_t rdp_end = 0;
 
-/** @brief The current cache flushing strategy */
-static flush_t flush_strategy = FLUSH_STRATEGY_AUTOMATIC;
-
 /** @brief Interrupt wait flag */
 static volatile uint32_t wait_intr = 0;
 
@@ -282,9 +279,6 @@ void rdp_send( void )
  */
 void rdp_init( void )
 {
-    /* Default to flushing automatically */
-    flush_strategy = FLUSH_STRATEGY_AUTOMATIC;
-
     /* Set the ringbuffer up */
     rdp_start = 0;
     rdp_end = 0;
@@ -599,117 +593,71 @@ void rdp_load_palette( uint8_t pal, uint8_t col_num, uint16_t *palette )
     __rdp_ringbuffer_send();
 }
 
-// Load texture of 16/32bits
-void __rdp_load_texture( sprite_t *sprite, int sh, int th )
-{
-    // Invalidate data associated with sprite in cache
-    if( flush_strategy == FLUSH_STRATEGY_AUTOMATIC )
-    {
-        data_cache_hit_writeback( sprite->data, sprite->width * sprite->height * sprite->bitdepth );
-    }
-		
-    // Point the RDP at the actual sprite data
-    __rdp_ringbuffer_queue( 0x3D000000 | ((sprite->bitdepth == 2) ? 0x00100000 : 0x00180000) | sh );
-    __rdp_ringbuffer_queue( (uint32_t)sprite->data );
-    __rdp_ringbuffer_send();	
-
-    // Figure out the power of two this sprite fits into
-    cache.real_width  = __rdp_round_to_power( sh + 1 );
-    cache.real_height = __rdp_round_to_power( th + 1 );
-    uint32_t wbits = __rdp_log2( cache.real_width  );
-    uint32_t hbits = __rdp_log2( cache.real_height );
-
-    // Because we are dividing by 8, we want to round up if we have a remainder
-    int16_t round_amount = (cache.real_width  % 8) ? 1 : 0;		
-	
-    // Instruct the RDP to copy the sprite data out
-    __rdp_ringbuffer_queue( 0x35000000 | ((sprite->bitdepth == 2) ? 0x00100000 : 0x00180000) | ((((cache.real_width  >> 3) + round_amount) << 1) & 0x1FF) << 9 );
-    __rdp_ringbuffer_queue( 0x40100 | hbits << 14 | wbits << 4 );
-    __rdp_ringbuffer_send();				
-		
-    // Copying out only a chunk this time
-    __rdp_ringbuffer_queue( 0x34000000 );
-    __rdp_ringbuffer_queue( ((sh << 2) & 0xFFF) << 12 | ((th << 2) & 0xFFF) );
-    __rdp_ringbuffer_send();			
-
-    // Save sprite width and height for managed sprite commands
-    cache.width = sh;
-    cache.height = th;	
-    cache.cp_x = sprite->hslices;
-    cache.cp_y = sprite->vslices;
-    cache.cp_start = sprite->format;
-}
-
-// Load texture of 4/8 bit
-void __rdp_load_texpal( sprite_t *sprite, int sh, int th )
-{	
-    // set correct mode
-    uint32_t bit_div = 0;
-    uint32_t wide_x;
-		
-    if (sprite->bitdepth==0) 
-    {  
-        bit_div = 1;
-        wide_x = (sprite->width >> 2) - 1;
-    }
-    else
-        wide_x = (sprite->width >> 1) - 1;
-		
-    // Invalidate data associated with sprite in cache
-    if( flush_strategy == FLUSH_STRATEGY_AUTOMATIC )
-    {
-        data_cache_hit_writeback( sprite->data, (sprite->width * sprite->height) >> bit_div );
-    }
-	
-    // set texture image, RGBA, 16bit
-    __rdp_ringbuffer_queue( 0x3D100000 | wide_x );
-    __rdp_ringbuffer_queue( (uint32_t)sprite->data );
-    __rdp_ringbuffer_send();	
-
-    // Figure out the power of two this sprite fits into
-    cache.real_width  = __rdp_round_to_power( sh + 1 );
-    cache.real_height = __rdp_round_to_power( th + 1 );
-    uint32_t wbits = __rdp_log2( cache.real_width  );
-    uint32_t hbits = __rdp_log2( cache.real_height );
-
-    // Because we are dividing by 8, we want to round up if we have a remainder
-    int16_t round_amount = (cache.real_width  % 8) ? 1 : 0;	
-    uint32_t math_line = (((cache.real_width  >> 3) + round_amount) & 0x1FF) >> bit_div;
-	
-    // set tile (1/2), palette = 16bit
-    __rdp_ringbuffer_queue( 0x35100000 | math_line << 9);
-    __rdp_ringbuffer_queue( 0x00000000 );
-    __rdp_ringbuffer_send();		
-		
-    // load tile, replace by load block
-    __rdp_ringbuffer_queue( 0x34000000 );
-    __rdp_ringbuffer_queue( ((sh << 2) & 0xFFF) << 12 | ((th << 2) & 0xFFF) );
-    __rdp_ringbuffer_send();	
-		
-    // rdp_sync( SYNC_TILE );
-
-    // set tile (2/2), texture: set color index and texture bitdepth
-    __rdp_ringbuffer_queue( 0x35400000 | sprite->bitdepth << 19 | math_line << 9 ); 
-    __rdp_ringbuffer_queue( 0x40100 | use_palette << 20 | hbits << 14 | wbits << 4 );
-    __rdp_ringbuffer_send();		
-
-    // Save sprite width and height for managed sprite commands
-    cache.width = sh;
-    cache.height = th;	
-    cache.cp_x = sprite->hslices;
-    cache.cp_y = sprite->vslices;
-    cache.cp_start = sprite->format;  
-}
-
-// Selects load function depending on sprite bitdepth
+// Load texture on TMEM depending on sprite bitdepth
 void rdp_load_texture( sprite_t *sprite )
 {
     if( !sprite ) { return; }
+	
+    // Save cache for managed sprite commands
+    cache.width = sprite->width - 1;
+    cache.height = sprite->height - 1;	
+    cache.cp_x = sprite->hslices;
+    cache.cp_y = sprite->vslices;
+    cache.cp_start = sprite->format;	
+	
+    // Figure out the power of two this sprite fits into
+    cache.real_width  = __rdp_round_to_power( sprite->width );
+    cache.real_height = __rdp_round_to_power( sprite->height );
+    uint32_t wbits = __rdp_log2( cache.real_width  );
+    uint32_t hbits = __rdp_log2( cache.real_height );
 
-    if (sprite->bitdepth>1)
-        __rdp_load_texture( sprite, sprite->width - 1, sprite->height - 1 );
-    else
-        __rdp_load_texpal( sprite, sprite->width - 1, sprite->height - 1 );
+    // Because we are dividing by 8, we want to round up if we have a remainder
+    uint16_t round_amount = (cache.real_width  % 8) ? 1 : 0;		
+	
+    if (sprite->bitdepth>1) // 16/32bit textures
+    {	
+        // Point the RDP at the actual sprite data
+        __rdp_ringbuffer_queue( 0x3D000000 | ((sprite->bitdepth == 2) ? 0x00100000 : 0x00180000) | cache.width );
+        __rdp_ringbuffer_queue( (uint32_t)sprite->data );
+        __rdp_ringbuffer_send();
+
+        // Instruct the RDP to copy the sprite data out
+        __rdp_ringbuffer_queue( 0x35000000 | ((sprite->bitdepth == 2) ? 0x00100000 : 0x00180000) | ((((cache.real_width  >> 3) + round_amount) << 1) & 0x1FF) << 9 );
+        __rdp_ringbuffer_queue( 0x40100 | hbits << 14 | wbits << 4 );
+        __rdp_ringbuffer_send();				
+		
+        // Copying out only a chunk this time
+        __rdp_ringbuffer_queue( 0x34000000 );
+        __rdp_ringbuffer_queue( ((cache.width << 2) & 0xFFF) << 12 | ((cache.height << 2) & 0xFFF) );
+        __rdp_ringbuffer_send();							
+    }	
+    else // 4/8bit textures
+    {	
+        // set correct mode
+        uint32_t bit_div = (sprite->bitdepth == 0) ? 1 : 0;
+        uint32_t wide_x = (sprite->width >> (1 + bit_div)) - 1;	
+        uint32_t math_line = (((cache.real_width  >> 3) + round_amount) & 0x1FF) >> bit_div;
+	
+        // set texture image, RGBA, 16bit
+        __rdp_ringbuffer_queue( 0x3D100000 | wide_x );
+        __rdp_ringbuffer_queue( (uint32_t)sprite->data );
+        __rdp_ringbuffer_send();
+
+        // set tile (1/2), palette = 16bit
+        __rdp_ringbuffer_queue( 0x35100000 | math_line << 9);
+        __rdp_ringbuffer_queue( 0x00000000 );
+        __rdp_ringbuffer_send();		
+		
+        // load tile
+        __rdp_ringbuffer_queue( 0x34000000 );
+        __rdp_ringbuffer_queue( ((cache.width << 2) & 0xFFF) << 12 | ((cache.height << 2) & 0xFFF) );
+        __rdp_ringbuffer_send();	
+
+        // set tile (2/2), texture: set color index and texture bitdepth
+        __rdp_ringbuffer_queue( 0x35400000 | sprite->bitdepth << 19 | math_line << 9 ); 
+        __rdp_ringbuffer_queue( 0x40100 | use_palette << 20 | hbits << 14 | wbits << 4 );
+        __rdp_ringbuffer_send();
+    }	
 }
 
 /**
@@ -985,26 +933,28 @@ void rdp_draw_filled_triangle( float x1, float y1, float x2, float y2, float x3,
     __rdp_ringbuffer_send();
 }
 
-/**
- * @brief Set the flush strategy for texture loads
- *
- * If textures are guaranteed to be in uncached RDRAM or the cache
- * is flushed before calling load operations, the RDP can be told
- * to skip flushing the cache.  This affords a good speedup.  However,
- * if you are changing textures in memory on the fly or otherwise do
- * not want to deal with cache coherency, set the cache strategy to
- * automatic to have the RDP flush cache before texture loads.
- *
- * @param[in] flush
- *            The cache strategy, either #FLUSH_STRATEGY_NONE or
- *            #FLUSH_STRATEGY_AUTOMATIC.
- */
-void rdp_set_texture_flush( flush_t flush )
-{
-    flush_strategy = flush;
-}
+// LOAD TEXTURE
+sprite_t *load_sprite( const char * const spritename )
+{	
+    int fp = dfs_open(spritename);
 
-/** @} */
+    if( fp )
+    {
+        sprite_t *sp = malloc( dfs_size( fp ) );
+        dfs_read( sp, 1, dfs_size( fp ), fp );
+        dfs_close( fp );
+
+        // Invalidate data associated with sprite in cache
+        if (sp->bitdepth > 0)
+            data_cache_hit_writeback_invalidate( sp->data, sp->width * sp->height * sp->bitdepth );
+        else
+            data_cache_hit_writeback_invalidate( sp->data, (sp->width * sp->height) >> 1 );
+		
+        return sp;
+    }
+    else
+        return 0;
+}
 
 // SPRITE CP (virtual center)
 void rdp_cp_sprite( int x, int y, int flags, int cp_x, int cp_y, int line )
@@ -1026,9 +976,7 @@ void rdp_cp_sprite( int x, int y, int flags, int cp_x, int cp_y, int line )
 		
     // Position based on flipping
     if (flags==0)	
-    {	
-        x-=cp_x;
-    }	
+        x-=cp_x;	
     else
     {	
         // Mirror X (flags 1 & 3)
@@ -1092,9 +1040,7 @@ void rdp_cp_sprite_scaled( int x, int y, float x_scale, float y_scale, int flags
 
     // Position based on flipping
     if (flags==0)	
-    {	
         x-=cp_x1;
-    }	
     else
     {	
         // Mirror X (flags 1 & 3)

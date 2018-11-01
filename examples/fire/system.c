@@ -1,21 +1,27 @@
+// RAND FUNCTION
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
+// enable palette (tlut)
+#define EN_TLUT 0x00800000000000
+// enable atomic prim, 1st primitive bandwitdh save
+#define ATOMIC_PRIM 0x80000000000000
+// enable perspective correction
+#define PERSP_TEX_EN 0x08000000000000
+// select alpha dither
+#define ALPHA_DITHER_SEL_PATTERN 0x00000000000000
+#define ALPHA_DITHER_SEL_PATTERNB 0x00001000000000
+#define ALPHA_DITHER_SEL_NOISE 0x00002000000000
+#define ALPHA_DITHER_SEL_NO_DITHER 0x00003000000000
+// select rgb dither
+#define RGB_DITHER_SEL_MAGIC_SQUARE_MATRIX 0x00000000000000
+#define RGB_DITHER_SEL_STANDARD_BAYER_MATRIX 0x00004000000000
+#define RGB_DITHER_SEL_NOISE 0x00008000000000
+#define RGB_DITHER_SEL_NO_DITHER 0x0000C000000000
+// enable texture filtering
+#define SAMPLE_TYPE 0x00200000000000
+
 uint16_t framerate_refresh=0;
-
-// LOAD TEXTURE
-sprite_t *read_sprite( const char * const spritename )
-{
-	
-    int fp = dfs_open(spritename);
-
-    if( fp )
-    {
-        sprite_t *sp = malloc( dfs_size( fp ) );
-        dfs_read( sp, 1, dfs_size( fp ), fp );
-        dfs_close( fp );
-        return sp;
-    }
-    else
-        return 0;
-}
 
 // FPS
 void update_counter()

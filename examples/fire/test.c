@@ -6,31 +6,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-// RAND FUNCTION
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
 #include "system.c"
 #include "controls.c"
-
-// enable palette (tlut)
-#define EN_TLUT 0x00800000000000
-// enable atomic prim, 1st primitive bandwitdh save
-#define ATOMIC_PRIM 0x80000000000000
-// enable perspective correction
-#define PERSP_TEX_EN 0x08000000000000
-// select alpha dither
-#define ALPHA_DITHER_SEL_PATTERN 0x00000000000000
-#define ALPHA_DITHER_SEL_PATTERNB 0x00001000000000
-#define ALPHA_DITHER_SEL_NOISE 0x00002000000000
-#define ALPHA_DITHER_SEL_NO_DITHER 0x00003000000000
-// select rgb dither
-#define RGB_DITHER_SEL_MAGIC_SQUARE_MATRIX 0x00000000000000
-#define RGB_DITHER_SEL_STANDARD_BAYER_MATRIX 0x00004000000000
-#define RGB_DITHER_SEL_NOISE 0x00008000000000
-#define RGB_DITHER_SEL_NO_DITHER 0x0000C000000000
-// enable texture filtering
-#define SAMPLE_TYPE 0x00200000000000
 
 // SYSTEM
 static sprite_t *graph[50]; // sprites (0..40 background, 41..45 fire, 46 stick, 47 light)
@@ -108,25 +85,14 @@ int main(void)
     for(i=1;i<48;i++)
     {
         sprintf(sprite_path,"/%d.sprite",i);
-        graph[i] = read_sprite(sprite_path);
+        graph[i] = load_sprite(sprite_path);
 
         if (graph[i]==0)
         {	
             error=i+1;
             break;
         }
-        else
-        {		
-            // INVALIDATE CACHE
-            if (graph[i]->bitdepth > 0)
-                data_cache_hit_writeback_invalidate( graph[i]->data, graph[i]->width * graph[i]->height * graph[i]->bitdepth );
-            else
-                data_cache_hit_writeback_invalidate( graph[i]->data, (graph[i]->width * graph[i]->height) >> 1 );
-        }
     }
-
-    // Because we invalidated cache
-    rdp_set_texture_flush(FLUSH_STRATEGY_NONE);
 	
     // LOOP
     while(1)
