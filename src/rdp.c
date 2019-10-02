@@ -938,10 +938,11 @@ sprite_t *load_sprite( const char * const spritename )
 {	
     int fp = dfs_open(spritename);
 
-    if( fp )
+    if( fp > 0 )
     {
-        sprite_t *sp = malloc( dfs_size( fp ) );
-        dfs_read( sp, 1, dfs_size( fp ), fp );
+        int size = dfs_size( fp );
+        sprite_t *sp = malloc( size );
+        dfs_read( sp, 1, size, fp );
         dfs_close( fp );
 
         // Invalidate data associated with sprite in cache
